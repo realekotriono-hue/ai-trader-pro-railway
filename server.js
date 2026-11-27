@@ -91,7 +91,7 @@ try {
       void runSignalMonitor();
       const monitor = setInterval(runSignalMonitor, 60000);
       monitor.unref?.();
-      console.log('AI signal background monitor enabled (M3, XAUUSD + BTCUSD, every 60s).');
+      console.log('AI market/zone monitor enabled (M1/M3/M5/M15, XAUUSD + BTCUSD, every 60s); paper signal tracking on M3.');
     }
   });
 } catch (err) {
