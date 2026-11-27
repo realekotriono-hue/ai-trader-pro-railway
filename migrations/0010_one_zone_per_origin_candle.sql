@@ -1,0 +1,5 @@
+ALTER TABLE ai_smc_zones
+  DROP CONSTRAINT IF EXISTS ai_smc_zones_symbol_timeframe_zone_type_side_source_candle_time_key;
+ALTER TABLE ai_smc_zones
+  ADD CONSTRAINT ai_smc_zones_symbol_timeframe_zone_type_source_candle_time_key
+  UNIQUE(symbol,timeframe,zone_type,source_candle_time);
