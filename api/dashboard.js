@@ -1,5 +1,5 @@
 import { publicMarket } from '../lib/market.js';
-import { trackAiSignals, getAiSignalStats, getAiSignalHistory } from '../lib/signal-journal.js';
+import { getActiveAiSignal, getAiSignalStats, getAiSignalHistory } from '../lib/signal-journal.js';
 
 export default async function(req,res) {
   const symbol=['XAUUSD','BTCUSD'].includes(String(req.query?.symbol||'XAUUSD').toUpperCase())
@@ -8,8 +8,7 @@ export default async function(req,res) {
     ? String(req.query?.tf||'M3').toUpperCase() : 'M3';
   try {
     const market=await publicMarket(symbol,tf);
-    await trackAiSignals(market);
-    const [stats,history]=await Promise.all([getAiSignalStats(symbol),getAiSignalHistory(symbol,100)]);
+    const [stats,history,activeSignal]=await Promise.all([getAiSignalStats(symbol),getAiSignalHistory(symbol,100),getActiveAiSignal(symbol,tf)]);
     const formattedHistory=history.map(r=>({
       ...r,
       time:new Date(r.openedAt).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}),
@@ -22,11 +21,12 @@ export default async function(req,res) {
       source:market.provider,ageMs:0,missingTimeframes:[]};
     const checks=Object.fromEntries(market.analysis.checks.map(c=>[c.name,c]));
     market.signal.executable=false;
+    if(activeSignal) market.signal={...market.signal,...activeSignal,entry:activeSignal.entry,sl:activeSignal.sl,tp1:activeSignal.tp1,tp2:activeSignal.tp2,rr:'1 : 2',locked:true,entryZone:{low:activeSignal.entryLow,high:activeSignal.entryHigh},reason:activeSignal.reason||'Locked AI setup; levels will not move until entry, SL/TP, cancellation or expiry.'};
     res.json({...market,model:{name:'AI Signal Analysis',version:'3.0-signal-journal',type:'SMC/MTF weighted analysis + paper outcome tracking'},
       bridge:noBridge,account:{balance:null,equity:null,floating:null},positions:[],stats:{...stats,totalProfit:stats.netR,maxDrawdown:null},
       history:formattedHistory,execution:{enabled:false,capable:false,qualified:false,mode:'PAPER_TRACKING_ONLY',riskCapPct:0,recent:[]},
       features:[{name:'MTF Structure',weight:22},{name:'Order Block',weight:18},{name:'FVG',weight:15},{name:'EMA',weight:15},{name:'RSI',weight:12},{name:'ATR',weight:10},{name:'Session',weight:8},{name:'Spread',weight:5}],
-      chart:{...market.chart,equity},signalTracking:{enabled:true,telegramConfigured:!!(process.env.TELEGRAM_BOT_TOKEN&&process.env.TELEGRAM_CHAT_ID),minimumConfidence:70,target:'TP2',resolution:'SL is prioritized if SL and TP are touched in the same candle'},
+      chart:{...market.chart,equity},signalTracking:{enabled:true,activeSignal:!!activeSignal,telegramConfigured:!!(process.env.TELEGRAM_BOT_TOKEN&&process.env.TELEGRAM_CHAT_ID),minimumConfidence:70,target:'TP2',resolution:'SL is prioritized if SL and TP are touched in the same candle'},
       checks});
   } catch(e) {
     console.error('public market / AI signal tracking failed',String(e));
