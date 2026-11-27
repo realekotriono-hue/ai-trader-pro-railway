@@ -22,6 +22,7 @@ export default async function(req,res) {
     const checks=Object.fromEntries(market.analysis.checks.map(c=>[c.name,c]));
     market.signal.executable=false;
     if(activeSignal) market.signal={...market.signal,...activeSignal,entry:activeSignal.entry,sl:activeSignal.sl,tp1:activeSignal.tp1,tp2:activeSignal.tp2,rr:'1 : 2',locked:true,entryZone:{low:activeSignal.entryLow,high:activeSignal.entryHigh},reason:activeSignal.reason||'Locked AI setup; levels will not move until entry, SL/TP, cancellation or expiry.'};
+    else market.signal={...market.signal,side:'WAIT',confidence:0,status:'NO_SETUP',entryZone:null,locked:false,reason:'Belum ada zona entry dengan konfluensi kuat. Menunggu OB/FVG dan MTF searah; tidak ada entry yang direkomendasikan saat ini.'};
     res.json({...market,model:{name:'AI Signal Analysis',version:'3.0-signal-journal',type:'SMC/MTF weighted analysis + paper outcome tracking'},
       bridge:noBridge,account:{balance:null,equity:null,floating:null},positions:[],stats:{...stats,totalProfit:stats.netR,maxDrawdown:null},
       history:formattedHistory,execution:{enabled:false,capable:false,qualified:false,mode:'PAPER_TRACKING_ONLY',riskCapPct:0,recent:[]},
