@@ -1,5 +1,6 @@
 import { publicMarket } from '../lib/market.js';
-import { getActiveAiSignal, getAiSignalStats, getAiSignalHistory } from '../lib/signal-journal.js';\nimport { getLatestStoredZones } from '../lib/zone-journal.js';
+import { getActiveAiSignal, getAiSignalStats, getAiSignalHistory } from '../lib/signal-journal.js';
+import { getLatestStoredZones } from '../lib/zone-journal.js';
 
 export default async function(req,res) {
   const symbol=['XAUUSD','BTCUSD'].includes(String(req.query?.symbol||'XAUUSD').toUpperCase())
@@ -8,7 +9,15 @@ export default async function(req,res) {
     ? String(req.query?.tf||'M3').toUpperCase() : 'M3';
   try {
     const market=await publicMarket(symbol,tf);
-    const [stats,history,activeSignal,storedZones]=await Promise.all([getAiSignalStats(symbol),getAiSignalHistory(symbol,100),getActiveAiSignal(symbol,tf),getLatestStoredZones(symbol,tf)]);\n    // Show the last persisted OB/FVG snapshots, never the rolling live detector output.\n    market.analysis.zones={ob:storedZones.ob||{ok:false},fvg:storedZones.fvg||{ok:false}};\n    market.analysis.checks=market.analysis.checks.map(c=>{\n      if(c.name==='Order Block (OB)'){const z=storedZones.ob;return {...c,ok:!!z,value:z?`${Number(z.low).toFixed(2)} - ${Number(z.high).toFixed(2)}`:'No stored OB zone'};}\n      if(c.name==='Fair Value Gap (FVG)'){const z=storedZones.fvg;return {...c,ok:!!z,value:z?`${Number(z.low).toFixed(2)} - ${Number(z.high).toFixed(2)}`:'No stored FVG zone'};}\n      return c;\n    });\n    market.chart.marks=market.chart.marks.filter(m=>m.type!=='OB'&&m.type!=='FVG');
+    const [stats,history,activeSignal,storedZones]=await Promise.all([getAiSignalStats(symbol),getAiSignalHistory(symbol,100),getActiveAiSignal(symbol,tf),getLatestStoredZones(symbol,tf)]);
+    // Show the last persisted OB/FVG snapshots, never the rolling live detector output.
+    market.analysis.zones={ob:storedZones.ob||{ok:false},fvg:storedZones.fvg||{ok:false}};
+    market.analysis.checks=market.analysis.checks.map(c=>{
+      if(c.name==='Order Block (OB)'){const z=storedZones.ob;return {...c,ok:!!z,value:z?`${Number(z.low).toFixed(2)} - ${Number(z.high).toFixed(2)}`:'No stored OB zone'};}
+      if(c.name==='Fair Value Gap (FVG)'){const z=storedZones.fvg;return {...c,ok:!!z,value:z?`${Number(z.low).toFixed(2)} - ${Number(z.high).toFixed(2)}`:'No stored FVG zone'};}
+      return c;
+    });
+    market.chart.marks=market.chart.marks.filter(m=>m.type!=='OB'&&m.type!=='FVG');
     const formattedHistory=history.map(r=>({
       ...r,
       time:new Date(r.openedAt).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}),
