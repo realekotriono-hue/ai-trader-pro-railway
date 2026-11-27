@@ -7,7 +7,7 @@ import { db } from './db.js';
 import analyze from './api/analyze.js';
 import dashboard from './api/dashboard.js';
 import { publicMarket } from './lib/market.js';
-import { trackAiSignals } from './lib/signal-journal.js';
+import { trackAiSignals } from './lib/signal-journal.js';\nimport { persistMarketZones } from './lib/zone-journal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
