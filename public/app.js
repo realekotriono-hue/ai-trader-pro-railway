@@ -69,7 +69,7 @@ function render(s) {
   $('signalArrow').style.background = s.signal.side === 'BUY' ? 'linear-gradient(135deg,#19df9d,#0ca377)' : 'linear-gradient(135deg,#ff6b76,#be3949)';
   $('confidence').textContent = s.signal.confidence + '%';
   document.querySelector('.confidence-ring').style.background = `conic-gradient(${s.signal.side === 'BUY' ? 'var(--green)' : 'var(--red)'} 0 ${s.signal.confidence}%,#18334b ${s.signal.confidence}% 100%)`;
-  $('confidenceLabel').textContent = s.signal.confidence >= 80 ? 'High Confidence' : s.signal.confidence >= 70 ? 'Valid Setup' : 'Watch';
+  $('confidenceLabel').textContent = s.signal.status==='WAITING_ENTRY'?'Waiting for Entry':s.signal.status==='OPEN'?'Entry Hit':s.signal.status==='NO_SETUP'?'No Valid Zone':s.signal.confidence >= 80 ? 'High Confidence' : s.signal.confidence >= 70 ? 'Valid Setup' : 'Watch';
   $('entry').textContent = s.signal.entryZone ? px(s.signal.entryZone.low)+' – '+px(s.signal.entryZone.high) : px(s.signal.entry); $('sl').textContent = px(s.signal.sl); $('tp1').textContent = px(s.signal.tp1); $('tp2').textContent = px(s.signal.tp2); $('rr').textContent = s.signal.status==='WAITING_ENTRY'?'WAITING ENTRY':s.signal.status==='OPEN'?'ENTRY HIT':s.signal.rr;
   $('reasonText').textContent = s.signal.reason;
   $('mtfRows').innerHTML = s.analysis.mtf.map(r => `<tr><td><b>${r.tf}</b></td><td class="${r.bias === 'Bullish' ? 'green' : r.bias === 'Bearish' ? 'red' : ''}">${r.bias} ${r.structure}</td><td class="${r.signal === 'BUY' ? 'green' : r.signal === 'SELL' ? 'red' : ''}">${r.signal === 'BUY' ? '↑' : r.signal === 'SELL' ? '↓' : '•'} ${r.signal}</td></tr>`).join('');
