@@ -26,7 +26,7 @@ export default async function(req,res) {
       bridge:noBridge,account:{balance:null,equity:null,floating:null},positions:[],stats:{...stats,totalProfit:stats.netR,maxDrawdown:null},
       history:formattedHistory,execution:{enabled:false,capable:false,qualified:false,mode:'PAPER_TRACKING_ONLY',riskCapPct:0,recent:[]},
       features:[{name:'MTF Structure',weight:22},{name:'Order Block',weight:18},{name:'FVG',weight:15},{name:'EMA',weight:15},{name:'RSI',weight:12},{name:'ATR',weight:10},{name:'Session',weight:8},{name:'Spread',weight:5}],
-      chart:{...market.chart,equity},signalTracking:{enabled:true,minimumConfidence:70,target:'TP2',resolution:'SL is prioritized if SL and TP are touched in the same candle'},
+      chart:{...market.chart,equity},signalTracking:{enabled:true,telegramConfigured:!!(process.env.TELEGRAM_BOT_TOKEN&&process.env.TELEGRAM_CHAT_ID),minimumConfidence:70,target:'TP2',resolution:'SL is prioritized if SL and TP are touched in the same candle'},
       checks});
   } catch(e) {
     console.error('public market / AI signal tracking failed',String(e));
