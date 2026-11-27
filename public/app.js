@@ -35,11 +35,11 @@ function drawChart(s) {
 
 function render(s) {
   snapshot = s;
-  const hasAccount = s.account && Number.isFinite(Number(s.account.balance));
+  const hasAccount = s.account?.balance !== null && s.account?.balance !== undefined && Number.isFinite(Number(s.account.balance));
   $('balance').textContent = hasAccount ? '$' + Number(s.account.balance).toFixed(2) : '—';
-  $('equity').textContent = s.account && Number.isFinite(Number(s.account.equity)) ? '$' + Number(s.account.equity).toFixed(2) : '—';
+  $('equity').textContent = s.account?.equity !== null && s.account?.equity !== undefined && Number.isFinite(Number(s.account.equity)) ? '$' + Number(s.account.equity).toFixed(2) : '—';
   $('floating').textContent = money(s.account?.floating);
-  $('floating').className = Number.isFinite(Number(s.account?.floating)) ? (Number(s.account.floating) >= 0 ? 'green' : 'red') : '';
+  $('floating').className = s.account?.floating !== null && s.account?.floating !== undefined && Number.isFinite(Number(s.account.floating)) ? (Number(s.account.floating) >= 0 ? 'green' : 'red') : '';
   $('winRate').textContent = s.stats.winRate === null ? '—' : s.stats.winRate + '%';
   $('winCount').textContent = s.stats.total ? `${s.stats.wins} / ${s.stats.total}` : 'AI signal outcomes';
   $('profitFactor').textContent = s.stats.profitFactor === null ? '—' : String(s.stats.profitFactor);
@@ -47,7 +47,7 @@ function render(s) {
   $('maxDd').textContent = s.stats.maxDrawdown === null ? '—' : Number(s.stats.maxDrawdown).toFixed(2) + '%';
   $('tradeCount').textContent = (s.stats.totalSignals ?? s.stats.total);
   $('winRing').style.background = s.stats.winRate === null ? 'conic-gradient(#18334b 0 100%)' : `conic-gradient(var(--green) 0 ${s.stats.winRate}%,#18334b ${s.stats.winRate}% 100%)`;
-  if ($('perfProfit')) $('perfProfit').textContent = s.stats.total ? money(s.stats.totalProfit) : '—';
+  if ($('perfProfit')) $('perfProfit').textContent = s.stats.total ? (Number(s.stats.totalProfit)>=0?'+':'')+Number(s.stats.totalProfit).toFixed(2)+'R' : '—';
   if ($('perfWinRate')) $('perfWinRate').textContent = s.stats.winRate === null ? '—' : s.stats.winRate + '%';
   if ($('perfProfitFactor')) $('perfProfitFactor').textContent = s.stats.profitFactor === null ? '—' : String(s.stats.profitFactor);
   if ($('perfMaxDd')) $('perfMaxDd').textContent = s.stats.maxDrawdown === null ? '—' : Number(s.stats.maxDrawdown).toFixed(2) + '%';
@@ -183,7 +183,7 @@ function renderModule(section) {
 
   if (section === 'history') {
     html = `${sectionHeader('Trade History','AI signal journal with simulated outcomes from the public market API.')}
-      <article class="card module-card"><div class="history-summary"><div><small>Total Trades</small><b>${s.stats.total}</b></div><div><small>Wins</small><b class="green">${s.stats.wins}</b></div><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':Number(s.stats.profitFactor).toFixed(2)}</b></div></div><div class="table-scroll tall"><table class="module-table"><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Result</th></tr></thead><tbody>${s.history.length?s.history.map(t=>`<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side==='BUY'?'green':'red'}">${t.side}</td><td>${px(t.entry)}</td><td>${px(t.exit)}</td><td class="${t.netR>=0?'green':'red'}">${t.netR>=0?'+':''}${Number(t.netR).toFixed(1)}R</td></tr>`).join(''):'<tr><td colspan="6">AI signal outcomes yet.</td></tr>'}</tbody></table></div></article>`;
+      <article class="card module-card"><div class="history-summary"><div><small>Total Trades</small><b>${s.stats.total}</b></div><div><small>Wins</small><b class="green">${s.stats.wins}</b></div><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':Number(s.stats.profitFactor).toFixed(2)}</b></div></div><div class="table-scroll tall"><table class="module-table"><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Result</th></tr></thead><tbody>${s.history.length?s.history.map(t=>`<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side==='BUY'?'green':'red'}">${t.side}</td><td>${px(t.entry)}</td><td>${t.exit===null?'—':px(t.exit)}</td><td class="${t.netR>=0?'green':'red'}">${t.netR>=0?'+':''}${Number(t.netR).toFixed(1)}R</td></tr>`).join(''):'<tr><td colspan="6">No AI signal records yet.</td></tr>'}</tbody></table></div></article>`;
   }
 
   if (section === 'backtest') {
