@@ -177,7 +177,7 @@ function renderModule(section) {
           <div><span>Entry</span><b>AI signal candle close</b></div><div><span>Stop Loss</span><b>SL level from analysis</b></div>
           <div><span>Take Profit</span><b>TP2 (2R target)</b></div><div><span>Confidence filter</span><b>70% minimum</b></div>
           <div><span>Ambiguous candle</span><b>SL first (conservative)</b></div>
-        </div><p class="module-copy">The dashboard must continue polling for new market candles so open signals can be resolved. Statistics represent simulated signal outcomes, not verified broker fills or realized account P/L.</p></article>
+        </div><p class="module-copy">The Railway server monitors XAUUSD and BTCUSD M3 in the background every 60 seconds, so signal tracking does not depend on keeping the dashboard open. Results are simulated, not broker fills or realized account P/L.</p></article>
       </div>`;
   }
 
