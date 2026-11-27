@@ -6,11 +6,6 @@ import { readdir, readFile } from 'node:fs/promises';
 import { db } from './db.js';
 import analyze from './api/analyze.js';
 import dashboard from './api/dashboard.js';
-import execute from './api/execute.js';
-import bridgeCommands from './api/bridge/commands.js';
-import bridgePush from './api/bridge/push.js';
-import bridgeResult from './api/bridge/result.js';
-import bridgeToken from './api/bridge/token.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -57,11 +52,12 @@ async function migrate() {
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'ai-trader-pro' }));
 app.post('/api/analyze', analyze);
 app.get('/api/dashboard', dashboard);
-app.post('/api/bridge/push', bridgePush);
-app.get('/api/bridge/commands', bridgeCommands);
-app.post('/api/bridge/result', bridgeResult);
-app.post('/api/bridge/token', requireAdmin, bridgeToken);
-app.post('/api/execute', requireAdmin, execute);
+const mt5Disabled = (_req,res) => res.status(410).json({error:'MT5 bridge and broker execution are disabled. AI Signal / Paper Tracking mode is active.'});
+app.post('/api/bridge/push', mt5Disabled);
+app.get('/api/bridge/commands', mt5Disabled);
+app.post('/api/bridge/result', mt5Disabled);
+app.post('/api/bridge/token', mt5Disabled);
+app.post('/api/execute', mt5Disabled);
 
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

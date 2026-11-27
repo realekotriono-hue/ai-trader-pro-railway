@@ -35,21 +35,21 @@ function drawChart(s) {
 
 function render(s) {
   snapshot = s;
-  const hasAccount = s.account && Number.isFinite(Number(s.account.balance));
+  const hasAccount = s.account?.balance !== null && s.account?.balance !== undefined && Number.isFinite(Number(s.account.balance));
   $('balance').textContent = hasAccount ? '$' + Number(s.account.balance).toFixed(2) : '—';
-  $('equity').textContent = s.account && Number.isFinite(Number(s.account.equity)) ? '$' + Number(s.account.equity).toFixed(2) : '—';
+  $('equity').textContent = s.account?.equity !== null && s.account?.equity !== undefined && Number.isFinite(Number(s.account.equity)) ? '$' + Number(s.account.equity).toFixed(2) : '—';
   $('floating').textContent = money(s.account?.floating);
-  $('floating').className = Number.isFinite(Number(s.account?.floating)) ? (Number(s.account.floating) >= 0 ? 'green' : 'red') : '';
+  $('floating').className = s.account?.floating !== null && s.account?.floating !== undefined && Number.isFinite(Number(s.account.floating)) ? (Number(s.account.floating) >= 0 ? 'green' : 'red') : '';
   $('winRate').textContent = s.stats.winRate === null ? '—' : s.stats.winRate + '%';
-  $('winCount').textContent = s.stats.total ? `${s.stats.wins} / ${s.stats.total}` : 'No closed MT5 trades';
-  $('profitFactor').textContent = s.stats.profitFactor === null ? '—' : Number(s.stats.profitFactor).toFixed(2);
-  $('totalProfit').textContent = s.stats.total ? money(s.stats.totalProfit) : '—';
+  $('winCount').textContent = s.stats.total ? `${s.stats.wins} / ${s.stats.total}` : 'AI signal outcomes';
+  $('profitFactor').textContent = s.stats.profitFactor === null ? '—' : String(s.stats.profitFactor);
+  $('totalProfit').textContent = s.stats.total ? (Number(s.stats.totalProfit)>=0?'+':'')+Number(s.stats.totalProfit).toFixed(2)+'R' : '—';
   $('maxDd').textContent = s.stats.maxDrawdown === null ? '—' : Number(s.stats.maxDrawdown).toFixed(2) + '%';
-  $('tradeCount').textContent = s.stats.total;
+  $('tradeCount').textContent = (s.stats.totalSignals ?? s.stats.total);
   $('winRing').style.background = s.stats.winRate === null ? 'conic-gradient(#18334b 0 100%)' : `conic-gradient(var(--green) 0 ${s.stats.winRate}%,#18334b ${s.stats.winRate}% 100%)`;
-  if ($('perfProfit')) $('perfProfit').textContent = s.stats.total ? money(s.stats.totalProfit) : '—';
+  if ($('perfProfit')) $('perfProfit').textContent = s.stats.total ? (Number(s.stats.totalProfit)>=0?'+':'')+Number(s.stats.totalProfit).toFixed(2)+'R' : '—';
   if ($('perfWinRate')) $('perfWinRate').textContent = s.stats.winRate === null ? '—' : s.stats.winRate + '%';
-  if ($('perfProfitFactor')) $('perfProfitFactor').textContent = s.stats.profitFactor === null ? '—' : Number(s.stats.profitFactor).toFixed(2);
+  if ($('perfProfitFactor')) $('perfProfitFactor').textContent = s.stats.profitFactor === null ? '—' : String(s.stats.profitFactor);
   if ($('perfMaxDd')) $('perfMaxDd').textContent = s.stats.maxDrawdown === null ? '—' : Number(s.stats.maxDrawdown).toFixed(2) + '%';
   if ($('perfTf')) $('perfTf').textContent = s.timeframe;
   $('chartTf').textContent = s.timeframe;
@@ -57,8 +57,8 @@ function render(s) {
   if ($('sourceTag')) $('sourceTag').textContent = s.providerType === 'mt5-live' ? 'MT5 LIVE' : s.providerType === 'public-live-derived' ? 'LIVE · DERIVED' : 'LIVE';
   if ($('instrumentName')) $('instrumentName').textContent = s.symbol === 'BTCUSD' ? 'Bitcoin / US Dollar' : 'Gold / US Dollar';
   if ($('liveNotice')) {
-    const bridgeNote = s.bridge.executionCapable ? `MT5 Bridge ${esc(s.bridge.version||'V5')} is armed for live execution.` : s.bridge.marketReady ? `MT5 candles + account are live, but execution is not armed (${esc(s.bridge.version||'bridge version unknown')}).` : s.bridge.connected ? `MT5 account connected, but market candles are incomplete (${esc((s.bridge.missingTimeframes||[]).join(', ')||'unknown')}); public market fallback is active.` : 'MT5 bridge not connected; public market source is active.';
-    $('liveNotice').innerHTML = `<span>${s.bridge.executionCapable ? 'MT5 LIVE EXEC' : s.providerType === 'mt5-live' ? 'MT5 LIVE' : 'LIVE SNAPSHOT'}</span> ${esc(s.symbol)} source: <b>${esc(s.provider)}</b> · updated ${new Date(s.updatedAt).toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta'})} WIB. ${bridgeNote}`;
+    const tg = s.signalTracking?.telegramConfigured ? 'Telegram notifications are configured.' : 'Telegram bot credentials are still required to enable notifications.';
+    $('liveNotice').innerHTML = `<span>API SIGNAL MODE</span> ${esc(s.symbol)} · ${esc(s.timeframe)} · ${esc(s.provider)}. No MT5 connection or broker execution is used. Signals from 70% confidence are tracked against later candles; ${esc(tg)}`;
   }
   $('signalSymbol').textContent = `${s.symbol} · ${s.timeframe}`;
   $('ohlc').innerHTML = `O ${px(s.market.open)} &nbsp; H ${px(s.market.high)} &nbsp; L ${px(s.market.low)} &nbsp; C ${px(s.market.close)} &nbsp; <b class="${s.market.change >= 0 ? 'green' : 'red'}">${s.market.change >= 0 ? '+' : ''}${Number(s.market.change).toFixed(2)}</b>`;
@@ -74,16 +74,16 @@ function render(s) {
   $('reasonText').textContent = s.signal.reason;
   $('mtfRows').innerHTML = s.analysis.mtf.map(r => `<tr><td><b>${r.tf}</b></td><td class="${r.bias === 'Bullish' ? 'green' : r.bias === 'Bearish' ? 'red' : ''}">${r.bias} ${r.structure}</td><td class="${r.signal === 'BUY' ? 'green' : r.signal === 'SELL' ? 'red' : ''}">${r.signal === 'BUY' ? '↑' : r.signal === 'SELL' ? '↓' : '•'} ${r.signal}</td></tr>`).join('');
   $('checks').innerHTML = s.analysis.checks.map(c => `<div class="check-row"><span>${esc(c.name)}</span><b class="${c.ok?'green':''}">${c.ok ? '✓ ' : '— '}${esc(c.value)}</b></div>`).join('');
-  $('historyRows').innerHTML = s.history.length ? s.history.map(t => `<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side === 'BUY' ? 'side-buy' : 'side-sell'}">${t.side}</td><td>${px(t.entry)}</td><td>${px(t.exit)}</td><td class="${t.netR >= 0 ? 'green' : 'red'}">${t.netR >= 0 ? '+' : ''}${Number(t.netR).toFixed(1)}R</td></tr>`).join('') : '<tr><td colspan="6">No closed MT5 trades yet.</td></tr>';
+  $('historyRows').innerHTML = s.history.length ? s.history.map(t => `<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side === 'BUY' ? 'side-buy' : 'side-sell'}">${t.side}</td><td>${px(t.entry)}</td><td>${t.exit===null?'—':px(t.exit)}</td><td class="${t.netR===null?'':t.netR >= 0 ? 'green' : 'red'}">${t.status==='OPEN'?'OPEN':t.netR >= 0 ? '+' : ''}${t.netR===null?'':Number(t.netR).toFixed(1)+'R'}</td></tr>`).join('') : '<tr><td colspan="6">No AI signal records yet.</td></tr>';
   $('featureBars').innerHTML = s.features.map(f => `<div class="feature"><span>${esc(f.name)}</span><div class="bar"><i style="width:${f.weight}%"></i></div><b>${f.weight}%</b></div>`).join('');
-  $('mt5Status').textContent = s.bridge.executionCapable ? `Connected · Live ${s.bridge.version||'V5'}` : s.bridge.connected ? (s.bridge.marketReady ? 'Connected · Monitor' : 'Connected · Incomplete') : 'Not Connected';
-  $('mt5Dot').className = 'dot ' + (s.bridge.connected ? 'ok' : '');
-  $('modeText').textContent = s.bridge.executionCapable ? 'MT5 LIVE Execution' : s.bridge.marketReady ? 'MT5 Market + Account' : s.bridge.connected ? 'MT5 Account · Public Market' : 'Public Live Market';
+  $('mt5Status').textContent = 'Public API Active';
+  $('mt5Dot').className = 'dot ok';
+  $('modeText').textContent = 'Public API · Paper Signals';
   if ($('modelVersionTag')) $('modelVersionTag').textContent = 'v' + (s.model?.version || '2.0-live').replace('-live','') + ' LIVE';
   const posBox = $('positionBox');
-  if (posBox) posBox.innerHTML = s.positions?.length ? s.positions.map(p=>`<div class="position-live"><div class="pos-head"><h3>${esc(p.symbol||s.symbol)} <span class="${String(p.side).toUpperCase()==='BUY'?'green':'red'}">${esc(p.side||'')}</span></h3><div class="pnl">${money(p.pnl ?? p.profit)}</div></div></div>`).join('') : `<div class="empty-state">${s.bridge.connected ? 'MT5 bridge connected; no open position reported.' : 'No MT5 position data. Connect MT5 Bridge V5 to show broker positions.'}</div>`;
-  $('executeBtn').disabled = !s.execution?.enabled;
-  $('executeBtn').textContent = s.execution?.enabled ? `EXECUTE LIVE ${s.signal.side}` : s.bridge?.executionCapable ? 'SETUP NOT QUALIFIED FOR LIVE' : 'LIVE EXECUTION NOT ARMED';
+  if (posBox) posBox.innerHTML = s.positions?.length ? s.positions.map(p=>`<div class="position-live"><div class="pos-head"><h3>${esc(p.symbol||s.symbol)} <span class="${String(p.side).toUpperCase()==='BUY'?'green':'red'}">${esc(p.side||'')}</span></h3><div class="pnl">${money(p.pnl ?? p.profit)}</div></div></div>`).join('') : `<div class="empty-state">${s.bridge.connected ? 'No simulated position is open.' : 'Paper mode active. No broker positions.'}</div>`;
+  $('executeBtn').disabled = true;
+  $('executeBtn').textContent = 'PAPER TRACKING ONLY · NO BROKER ORDERS';
   drawChart(s);
   if (activeSection !== 'dashboard') renderModule(activeSection);
 }
@@ -160,29 +160,40 @@ function renderModule(section) {
   }
 
   if (section === 'auto') {
-    const recent = s.execution?.recent || [];
-    html = `${sectionHeader('Live / Auto Trading','Agent Model V2 can queue guarded live orders to MT5 Bridge V5. Fully autonomous mode remains off until you explicitly arm it in the EA.')}
+    html = `${sectionHeader('AI Signal Tracking','API-only paper tracking. No MT5, EA or broker orders are used.')}
       <div class="module-grid two">
-        <article class="card module-card"><div class="status-line"><span class="dot ${s.bridge.executionCapable?'ok':''}"></span><div><b>MT5 Bridge ${esc(s.bridge.version||'V5')}</b><small>${s.bridge.executionCapable?'LIVE EXECUTION ARMED':s.bridge.marketReady?'Market/account connected · execution not armed':s.bridge.connected?`Connected · missing ${esc((s.bridge.missingTimeframes||[]).join(', ')||'timeframes')}`:'Not connected'}</small></div></div><div class="auto-master ${s.bridge.executionCapable?'enabled':''}"><span>${s.execution?.enabled?'LIVE SETUP QUALIFIED':s.bridge.executionCapable?'WAITING FOR QUALIFIED SETUP':'LIVE EXECUTION LOCKED'}</span><small>${s.bridge.executionCapable?'Orders are sent only after server-side MTF + OB + spread + confidence checks and operator confirmation.':'Install and arm MT5 Bridge V5 to enable broker execution.'}</small></div><button class="primary module-btn" id="liveNow" ${s.execution?.enabled?'':'disabled'}>${s.execution?.enabled?`EXECUTE LIVE ${s.signal.side}`:'LIVE EXECUTION NOT READY'}</button><button class="secondary module-btn" id="refreshAuto">Refresh Live Signal</button></article>
-        <article class="card module-card"><h3>Live Risk Rules</h3><label class="module-field">Minimum Confidence<input id="minConfidence" type="number" min="80" max="100" value="${localStorage.getItem('minConfidence')||80}"></label><label class="module-field">Risk / Trade (%)<input id="moduleRiskPct" type="number" min="0.1" max="3" step="0.1" value="${localStorage.getItem('riskPct')||1}"></label><div class="switch-row large"><span>Break Even +30 pips</span><button class="switch ${localStorage.getItem('liveBE')==='false'?'':'on'}" id="beSwitchModule"></button></div><div class="switch-row large"><span>Trailing Stop</span><button class="switch ${localStorage.getItem('liveTrail')==='true'?'on':''}" id="trailSwitchModule"></button></div><button class="secondary module-btn" id="saveAutoRules">Save Live Rules</button><div class="notice compact">Hard server cap: maximum 3% risk per trade. One open position per symbol. Commands expire after 45 seconds.</div></article>
-        <article class="card module-card span2"><h3>Recent Execution Commands</h3><div class="table-scroll"><table class="module-table"><thead><tr><th>ID</th><th>Side</th><th>TF</th><th>Status</th><th>Ticket</th><th>Message</th></tr></thead><tbody>${recent.length?recent.map(c=>`<tr><td>#${c.id}</td><td class="${c.side==='BUY'?'green':'red'}">${c.side}</td><td>${c.timeframe}</td><td>${esc(c.status)}</td><td>${esc(c.brokerTicket||'—')}</td><td>${esc(c.message||'—')}</td></tr>`).join(''):'<tr><td colspan="6">No live command has been sent yet.</td></tr>'}</tbody></table></div></article>
-        <article class="card module-card span2"><h3>MT5 Positions</h3>${s.positions?.length ? s.positions.map(p=>`<div class="position-live"><div class="pos-head"><h3>${esc(p.symbol||s.symbol)} <span class="${String(p.side).toUpperCase()==='BUY'?'green':'red'}">${esc(p.side||'')}</span></h3><div class="pnl">${money(p.pnl ?? p.profit)}</div></div></div>`).join('') : '<div class="empty-state">No MT5 position data available.</div>'}</article>
+        <article class="card module-card"><h3>Signal Tracking Status</h3>
+          <div class="status-line"><span class="dot ok"></span><div><b>Public Market API</b><small>Connected through the existing market-data provider</small></div></div>
+          <div class="auto-master enabled"><span>PAPER / SIGNAL MODE</span><small>Signals with confidence ≥70% are recorded once per candle. Results are evaluated against future candles; SL is prioritized if both SL and TP2 are touched in one candle.</small></div>
+          <div class="metric-list"><div><span>Signals recorded</span><b>${s.stats.totalSignals||0}</b></div><div><span>Open signals</span><b>${s.stats.open||0}</b></div><div><span>Telegram</span><b>${s.signalTracking?.telegramConfigured?'Configured':'Needs bot token + chat ID'}</b></div></div>
+        </article>
+        <article class="card module-card"><h3>AI Signal Performance</h3><div class="metric-list">
+          <div><span>Closed</span><b>${s.stats.total}</b></div><div><span>Wins / Losses</span><b>${s.stats.wins} / ${s.stats.losses}</b></div>
+          <div><span>Win Rate</span><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div>
+          <div><span>Profit Factor</span><b>${s.stats.profitFactor===null?'—':s.stats.profitFactor}</b></div>
+          <div><span>Net Result</span><b>${Number(s.stats.netR||0)>=0?'+':''}${Number(s.stats.netR||0).toFixed(2)}R</b></div>
+        </div></article>
+        <article class="card module-card span2"><h3>Tracking Rules</h3><div class="policy-box">
+          <div><span>Entry</span><b>AI signal candle close</b></div><div><span>Stop Loss</span><b>SL level from analysis</b></div>
+          <div><span>Take Profit</span><b>TP2 (2R target)</b></div><div><span>Confidence filter</span><b>70% minimum</b></div>
+          <div><span>Ambiguous candle</span><b>SL first (conservative)</b></div>
+        </div><p class="module-copy">The dashboard must continue polling for new market candles so open signals can be resolved. Statistics represent simulated signal outcomes, not verified broker fills or realized account P/L.</p></article>
       </div>`;
   }
 
   if (section === 'history') {
-    html = `${sectionHeader('Trade History','Journal view for entries, exits and Net R performance.')}
-      <article class="card module-card"><div class="history-summary"><div><small>Total Trades</small><b>${s.stats.total}</b></div><div><small>Wins</small><b class="green">${s.stats.wins}</b></div><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':Number(s.stats.profitFactor).toFixed(2)}</b></div></div><div class="table-scroll tall"><table class="module-table"><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net R</th></tr></thead><tbody>${s.history.length?s.history.map(t=>`<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side==='BUY'?'green':'red'}">${t.side}</td><td>${px(t.entry)}</td><td>${px(t.exit)}</td><td class="${t.netR>=0?'green':'red'}">${t.netR>=0?'+':''}${Number(t.netR).toFixed(1)}R</td></tr>`).join(''):'<tr><td colspan="6">No closed MT5 trades yet.</td></tr>'}</tbody></table></div></article>`;
+    html = `${sectionHeader('Trade History','AI signal journal with simulated outcomes from the public market API.')}
+      <article class="card module-card"><div class="history-summary"><div><small>Total Trades</small><b>${s.stats.total}</b></div><div><small>Wins</small><b class="green">${s.stats.wins}</b></div><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':String(s.stats.profitFactor)}</b></div></div><div class="table-scroll tall"><table class="module-table"><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Result</th></tr></thead><tbody>${s.history.length?s.history.map(t=>`<tr><td>${t.time}</td><td>${t.symbol}</td><td class="${t.side==='BUY'?'green':'red'}">${t.side}</td><td>${px(t.entry)}</td><td>${t.exit===null?'—':px(t.exit)}</td><td class="${t.netR===null?'':t.netR>=0?'green':'red'}">${t.status==='OPEN'?'OPEN':(t.netR>=0?'+':'')+Number(t.netR).toFixed(1)+'R'}</td></tr>`).join(''):'<tr><td colspan="6">No AI signal records yet.</td></tr>'}</tbody></table></div></article>`;
   }
 
   if (section === 'backtest') {
     html = `${sectionHeader('Backtest','Inspect equity behavior and run a quick expectancy calculation from the current performance assumptions.')}
-      <div class="module-grid two"><article class="card module-card"><h3>Real Trade Equity Curve</h3><svg id="moduleEquity" class="module-equity" viewBox="0 0 800 250" preserveAspectRatio="none"></svg><div class="history-summary"><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':Number(s.stats.profitFactor).toFixed(2)}</b></div><div><small>Max DD</small><b class="red">${s.stats.maxDrawdown===null?'—':Number(s.stats.maxDrawdown).toFixed(2)+'%'}</b></div></div></article><article class="card module-card"><h3>Expectancy Calculator</h3><label class="module-field">Assumed Win Rate (%)<input id="calcWr" type="number" min="1" max="99" value="${s.stats.winRate===null?50:s.stats.winRate}"></label><label class="module-field">Reward : Risk<input id="calcRR" type="number" min="0.5" max="10" step="0.1" value="2"></label><label class="module-field">Trades<input id="calcTrades" type="number" min="1" max="10000" value="100"></label><button class="primary module-btn" id="calcExpectancy">Calculate</button><div class="calc-result" id="calcResult">Real performance appears after MT5 closed trades are synced.</div></article></div>`;
+      <div class="module-grid two"><article class="card module-card"><h3>AI Signal Equity Curve</h3><svg id="moduleEquity" class="module-equity" viewBox="0 0 800 250" preserveAspectRatio="none"></svg><div class="history-summary"><div><small>Win Rate</small><b>${s.stats.winRate===null?'—':s.stats.winRate+'%'}</b></div><div><small>Profit Factor</small><b>${s.stats.profitFactor===null?'—':Number(s.stats.profitFactor).toFixed(2)}</b></div><div><small>Max DD</small><b class="red">${s.stats.maxDrawdown===null?'—':Number(s.stats.maxDrawdown).toFixed(2)+'%'}</b></div></div></article><article class="card module-card"><h3>Expectancy Calculator</h3><label class="module-field">Assumed Win Rate (%)<input id="calcWr" type="number" min="1" max="99" value="${s.stats.winRate===null?50:s.stats.winRate}"></label><label class="module-field">Reward : Risk<input id="calcRR" type="number" min="0.5" max="10" step="0.1" value="2"></label><label class="module-field">Trades<input id="calcTrades" type="number" min="1" max="10000" value="100"></label><button class="primary module-btn" id="calcExpectancy">Calculate</button><div class="calc-result" id="calcResult">Paper performance updates as subsequent market candles reach SL or TP2.</div></article></div>`;
   }
 
   if (section === 'model') {
-    html = `${sectionHeader('AI Model V2','Live execution policy for SMC + multi-timeframe broker data. Version '+esc(s.model?.version||'2.0-live')+'.')}
-      <div class="module-grid two"><article class="card module-card"><h3>Feature Importance</h3><div class="feature-bars large-bars">${s.features.map(f=>`<div class="feature"><span>${esc(f.name)}</span><div class="bar"><i style="width:${Math.min(100,f.weight*4)}%"></i></div><b>${f.weight}%</b></div>`).join('')}</div></article><article class="card module-card"><h3>Live Model Policy</h3><div class="policy-box"><div><span>Version</span><b>${esc(s.model?.version||'2.0-live')}</b></div><div><span>Type</span><b>${esc(s.model?.type||'Deterministic SMC/MTF execution policy')}</b></div><div><span>Live threshold</span><b>≥ 80% + MTF + OB + spread</b></div><div><span>Risk hard cap</span><b>3% / trade</b></div><div><span>Market Data</span><b>${esc(s.provider)}</b></div><div><span>Broker Access</span><b class="${s.bridge.executionCapable?'green':''}">${s.bridge.executionCapable?'MT5 LIVE EXECUTION':'Not armed'}</b></div><div><span>Current Setup</span><b class="${s.execution?.qualified?'green':'red'}">${s.execution?.qualified?'LIVE QUALIFIED':'WAIT / BLOCKED'}</b></div></div><p class="module-copy">V2 recalculates the signal from broker candles on the server before a command is queued. The EA then independently calculates lot size from account equity and SL distance. Confidence is not a guarantee of profit.</p></article></div>`;
+    html = `${sectionHeader('AI Model V2','Signal-only analysis using public market data. No broker execution is enabled. Version '+esc(s.model?.version||'2.0-live')+'.')}
+      <div class="module-grid two"><article class="card module-card"><h3>Feature Importance</h3><div class="feature-bars large-bars">${s.features.map(f=>`<div class="feature"><span>${esc(f.name)}</span><div class="bar"><i style="width:${Math.min(100,f.weight*4)}%"></i></div><b>${f.weight}%</b></div>`).join('')}</div></article><article class="card module-card"><h3>AI Signal Policy</h3><div class="policy-box"><div><span>Version</span><b>${esc(s.model?.version||'2.0-live')}</b></div><div><span>Type</span><b>${esc(s.model?.type||'Deterministic SMC/MTF execution policy')}</b></div><div><span>Signal threshold</span><b>≥ 70% confidence</b></div><div><span>Execution</span><b>Disabled · Paper tracking only</b></div><div><span>Market Data</span><b>${esc(s.provider)}</b></div><div><span>Broker Access</span><b>Disabled</b></div><div><span>Current Signal</span><b>${s.signal.side} · ${s.signal.confidence}%</b></div></div><p class="module-copy">The model calculates SMC and multi-timeframe conditions from the configured public market API. Signal outcomes are simulated against subsequent candles; confidence is not a guarantee of profit.</p></article></div>`;
   }
 
   if (section === 'settings') {
