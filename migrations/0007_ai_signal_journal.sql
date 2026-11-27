@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS ai_signal_journal (
   opened_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   closed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(symbol,timeframe,side,candle_time)
+  UNIQUE(symbol,timeframe,candle_time)
 );
 CREATE INDEX IF NOT EXISTS ai_signal_journal_recent_idx ON ai_signal_journal(symbol, timeframe, created_at DESC);
 CREATE INDEX IF NOT EXISTS ai_signal_journal_open_idx ON ai_signal_journal(status, symbol, timeframe) WHERE status='OPEN';
