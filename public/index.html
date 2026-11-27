@@ -14,7 +14,7 @@
         <button class="nav-item active" data-section="dashboard"><span>⌂</span>Dashboard</button>
         <button class="nav-item" data-section="analysis"><span>⌁</span>Market Analysis</button>
         <button class="nav-item" data-section="signals"><span>◎</span>AI Signals</button>
-        <button class="nav-item" data-section="auto"><span>⬡</span>Auto Trading</button>
+        <button class="nav-item" data-section="auto"><span>⬡</span>AI Signal Tracking</button>
         <button class="nav-item" data-section="history"><span>◷</span>Trade History</button>
         <button class="nav-item" data-section="backtest"><span>▥</span>Backtest</button>
         <button class="nav-item" data-section="model"><span>◈</span>AI Model</button>
@@ -22,7 +22,7 @@
       </nav>
       <div class="sidebar-status">
         <div><span class="dot ok"></span>Server <b>Connected</b></div>
-        <div><span class="dot" id="mt5Dot"></span>MT5 Bridge <b id="mt5Status">Not Connected</b></div>
+        <div><span class="dot" id="mt5Dot"></span>Market API <b id="mt5Status">API Active</b></div>
       </div>
       <div class="clock" id="clock">--:--:-- WIB</div>
     </aside>
@@ -42,14 +42,14 @@
       </header>
 
       <section class="content" id="dashboardPage">
-        <div class="notice" id="liveNotice"><span>LIVE MARKET</span> Public market data is active. MT5 Bridge V5 can replace it with broker candles and enable guarded live execution when explicitly armed in the terminal.</div>
+        <div class="notice" id="liveNotice"><span>API SIGNAL MODE</span> Public market API active. No MT5 connection or broker execution is used.</div>
 
         <div class="kpi-grid">
-          <article class="card kpi"><div class="ring" id="winRing"><span id="winRate">—</span></div><div><small>Win Rate</small><strong id="winCount">No closed MT5 trades</strong><em>Synced from MT5 journal</em></div></article>
-          <article class="card kpi"><div class="kpi-icon">⌁</div><div><small>Profit Factor</small><strong id="profitFactor">—</strong><em>Real closed trades only</em></div></article>
+          <article class="card kpi"><div class="ring" id="winRing"><span id="winRate">—</span></div><div><small>Win Rate</small><strong id="winCount">No closed MT5 trades</strong><em>AI signal results</em></div></article>
+          <article class="card kpi"><div class="kpi-icon">⌁</div><div><small>Profit Factor</small><strong id="profitFactor">—</strong><em>Closed AI signals</em></div></article>
           <article class="card kpi"><div class="kpi-icon">▣</div><div><small>Total Profit</small><strong id="totalProfit">—</strong><em>Real closed trades only</em></div></article>
           <article class="card kpi"><div class="kpi-icon redish">△</div><div><small>Max Drawdown</small><strong id="maxDd">—</strong><em>Real trade journal</em></div></article>
-          <article class="card kpi"><div class="kpi-icon">▥</div><div><small>Total Trades</small><strong id="tradeCount">0</strong><em>Synced journal records</em></div></article>
+          <article class="card kpi"><div class="kpi-icon">▥</div><div><small>Total Trades</small><strong id="tradeCount">0</strong><em>AI signal records</em></div></article>
         </div>
 
         <div class="main-grid">
@@ -66,7 +66,7 @@
             <div class="signal-table">
               <div><span>Entry</span><b id="entry">—</b></div><div><span>SL</span><b id="sl">—</b></div><div><span>TP 1</span><b id="tp1">—</b></div><div><span>TP 2</span><b id="tp2">—</b></div><div><span>Risk : Reward</span><b id="rr">—</b></div>
             </div>
-            <button class="primary" id="executeBtn" disabled>EXECUTION LOCKED · READ ONLY</button>
+            <button class="primary" id="executeBtn" disabled>PAPER TRACKING ONLY · NO BROKER ORDERS</button>
             <div class="reason-box"><strong>Agent reasoning</strong><p id="reasonText">Waiting for live market analysis.</p></div>
           </article>
 
@@ -78,9 +78,9 @@
         </div>
 
         <div class="lower-grid">
-          <article class="card positions"><div class="card-head"><strong>Open Position</strong><span class="agent-pill">Position Agent</span></div><div id="positionBox" class="empty-state">No MT5 position data. Connect MT5 Bridge V5 to show broker positions and live execution state.</div></article>
-          <article class="card history"><div class="card-head"><strong>Trade History</strong><span class="agent-pill">Journal Agent</span></div><div class="table-scroll"><table><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net R</th></tr></thead><tbody id="historyRows"></tbody></table></div></article>
-          <article class="card performance"><div class="card-head"><strong>MT5 Performance</strong><span class="tag" id="perfTf">M3</span></div><div class="perf-grid"><div><small>Total Profit</small><b id="perfProfit">—</b></div><div><small>Win Rate</small><b id="perfWinRate">—</b></div><div><small>Profit Factor</small><b id="perfProfitFactor">—</b></div><div><small>Max DD</small><b id="perfMaxDd">—</b></div></div><svg id="equityChart" viewBox="0 0 500 150" preserveAspectRatio="none"></svg></article>
+          <article class="card positions"><div class="card-head"><strong>Open Position</strong><span class="agent-pill">Position Agent</span></div><div id="positionBox" class="empty-state">Paper mode active. No broker orders are sent.</div></article>
+          <article class="card history"><div class="card-head"><strong>Trade History</strong><span class="agent-pill">Signal Journal</span></div><div class="table-scroll"><table><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net R</th></tr></thead><tbody id="historyRows"></tbody></table></div></article>
+          <article class="card performance"><div class="card-head"><strong>AI Signal Performance</strong><span class="tag" id="perfTf">M3</span></div><div class="perf-grid"><div><small>Total Profit</small><b id="perfProfit">—</b></div><div><small>Win Rate</small><b id="perfWinRate">—</b></div><div><small>Profit Factor</small><b id="perfProfitFactor">—</b></div><div><small>Max DD</small><b id="perfMaxDd">—</b></div></div><svg id="equityChart" viewBox="0 0 500 150" preserveAspectRatio="none"></svg></article>
           <article class="card model"><div class="card-head"><strong>AI Model Performance</strong><span class="tag success" id="modelVersionTag">v2.0 LIVE</span></div><div id="featureBars" class="feature-bars"></div></article>
           <article class="card risk"><div class="card-head"><strong>Risk Management</strong><span class="agent-pill">Live Guard</span></div><div class="form-grid"><label>Risk / Trade<input id="riskPct" type="number" value="1" min="0.1" max="3" step="0.1">%</label><label>Max Daily Loss<input id="dailyLoss" type="number" value="5" min="1" max="20">%</label><label>Max Drawdown<input id="riskDd" type="number" value="15" min="1" max="50">%</label><label>Max Open Trades<input id="maxTrades" type="number" value="1" min="1" max="3"></label></div><div class="switch-row"><span>Break Even +30 pips</span><button class="switch on" id="beSwitchMain"></button></div><div class="switch-row"><span>Trailing Stop</span><button class="switch" id="trailSwitchMain"></button></div><button class="secondary" id="saveRisk">Save Live Risk Settings</button></article>
         </div>
