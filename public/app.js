@@ -70,7 +70,7 @@ function render(s) {
   $('confidence').textContent = s.signal.confidence + '%';
   document.querySelector('.confidence-ring').style.background = `conic-gradient(${s.signal.side === 'BUY' ? 'var(--green)' : 'var(--red)'} 0 ${s.signal.confidence}%,#18334b ${s.signal.confidence}% 100%)`;
   $('confidenceLabel').textContent = s.signal.confidence >= 80 ? 'High Confidence' : s.signal.confidence >= 70 ? 'Valid Setup' : 'Watch';
-  $('entry').textContent = px(s.signal.entry); $('sl').textContent = px(s.signal.sl); $('tp1').textContent = px(s.signal.tp1); $('tp2').textContent = px(s.signal.tp2); $('rr').textContent = s.signal.rr;
+  $('entry').textContent = s.signal.entryZone ? px(s.signal.entryZone.low)+' – '+px(s.signal.entryZone.high) : px(s.signal.entry); $('sl').textContent = px(s.signal.sl); $('tp1').textContent = px(s.signal.tp1); $('tp2').textContent = px(s.signal.tp2); $('rr').textContent = s.signal.status==='WAITING_ENTRY'?'WAITING ENTRY':s.signal.status==='OPEN'?'ENTRY HIT':s.signal.rr;
   $('reasonText').textContent = s.signal.reason;
   $('mtfRows').innerHTML = s.analysis.mtf.map(r => `<tr><td><b>${r.tf}</b></td><td class="${r.bias === 'Bullish' ? 'green' : r.bias === 'Bearish' ? 'red' : ''}">${r.bias} ${r.structure}</td><td class="${r.signal === 'BUY' ? 'green' : r.signal === 'SELL' ? 'red' : ''}">${r.signal === 'BUY' ? '↑' : r.signal === 'SELL' ? '↓' : '•'} ${r.signal}</td></tr>`).join('');
   $('checks').innerHTML = s.analysis.checks.map(c => `<div class="check-row"><span>${esc(c.name)}</span><b class="${c.ok?'green':''}">${c.ok ? '✓ ' : '— '}${esc(c.value)}</b></div>`).join('');
