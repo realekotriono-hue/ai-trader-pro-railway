@@ -6,5 +6,5 @@ export default async function(req,res){
   const confidence=max?Math.round(raw/max*100):0;
   const classification=confidence>=90?'PREMIUM':confidence>=80?'HIGH_CONFIDENCE':confidence>=70?'VALID':confidence>=60?'WATCH':'NO_TRADE';
   const liveQualified=confidence>=80&&checks.mtf&&checks.ob&&checks.spread===true;
-  res.json({modelVersion:'2.0-live',confidence,classification,liveQualified,checks,policy:{minimumConfidence:80,requires:['mtf','ob','spread'],riskCapPct:3,execution:'MT5_BRIDGE_V5_REQUIRED'}});
+  res.json({modelVersion:'2.0-live',confidence,classification,liveQualified,checks,policy:{minimumConfidence:80,requires:['mtf','ob','spread'],riskCapPct:3,execution:'DISABLED_PAPER_TRACKING_ONLY'}});
 }
