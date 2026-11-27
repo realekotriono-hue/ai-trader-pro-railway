@@ -6,6 +6,8 @@ import { readdir, readFile } from 'node:fs/promises';
 import { db } from './db.js';
 import analyze from './api/analyze.js';
 import dashboard from './api/dashboard.js';
+import { publicMarket } from './lib/market.js';
+import { trackAiSignals } from './lib/signal-journal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -66,11 +68,31 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+let signalMonitorRunning = false;
+async function runSignalMonitor() {
+  if (signalMonitorRunning || !process.env.DATABASE_URL) return;
+  signalMonitorRunning = true;
+  try {
+    for (const symbol of ['XAUUSD','BTCUSD']) {
+      try { await trackAiSignals(await publicMarket(symbol,'M3')); }
+      catch (error) { console.error('AI signal monitor failed for',symbol,error.message); }
+    }
+  } finally { signalMonitorRunning = false; }
+}
+
 const port = Number(process.env.PORT || 3000);
 try {
   if (process.env.DATABASE_URL) await migrate();
   else console.warn('Skipping database migrations: DATABASE_URL is missing.');
-  app.listen(port, '0.0.0.0', () => console.log(`AI Trader Pro listening on ${port}`));
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`AI Trader Pro listening on ${port}`);
+    if (process.env.DATABASE_URL) {
+      void runSignalMonitor();
+      const monitor = setInterval(runSignalMonitor, 60000);
+      monitor.unref?.();
+      console.log('AI signal background monitor enabled (M3, XAUUSD + BTCUSD, every 60s).');
+    }
+  });
 } catch (err) {
   console.error('Startup failed:', err);
   process.exit(1);
