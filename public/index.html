@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Trader Pro</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-icon">AI</div><div><strong>AI Trader Pro</strong><small>Agent Trading Framework</small></div></div>
+      <nav id="nav">
+        <button class="nav-item active" data-section="dashboard"><span>⌂</span>Dashboard</button>
+        <button class="nav-item" data-section="analysis"><span>⌁</span>Market Analysis</button>
+        <button class="nav-item" data-section="signals"><span>◎</span>AI Signals</button>
+        <button class="nav-item" data-section="auto"><span>⬡</span>Auto Trading</button>
+        <button class="nav-item" data-section="history"><span>◷</span>Trade History</button>
+        <button class="nav-item" data-section="backtest"><span>▥</span>Backtest</button>
+        <button class="nav-item" data-section="model"><span>◈</span>AI Model</button>
+        <button class="nav-item" data-section="settings"><span>⚙</span>Settings</button>
+      </nav>
+      <div class="sidebar-status">
+        <div><span class="dot ok"></span>Server <b>Connected</b></div>
+        <div><span class="dot" id="mt5Dot"></span>MT5 Bridge <b id="mt5Status">Not Connected</b></div>
+      </div>
+      <div class="clock" id="clock">--:--:-- WIB</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="instrument-wrap">
+          <div class="instrument"><span class="gold">◆</span><div><select id="symbolSelect" class="symbol-select"><option value="XAUUSD" selected>XAUUSD</option><option value="BTCUSD">BTCUSD</option></select><small id="instrumentName">Gold / US Dollar</small></div></div>
+          <select id="tfSelect"><option>M1</option><option selected>M3</option><option>M5</option><option>M15</option></select>
+          <div class="ea-pill"><span class="dot ok"></span><div><strong>Live Market Agents</strong><small id="modeText">Public Live Feed</small></div></div>
+        </div>
+        <div class="account-strip">
+          <div><small>Balance</small><b id="balance">—</b></div>
+          <div><small>Equity</small><b id="equity">—</b></div>
+          <div><small>Floating P/L</small><b id="floating">—</b></div>
+        </div>
+      </header>
+
+      <section class="content" id="dashboardPage">
+        <div class="notice" id="liveNotice"><span>LIVE MARKET</span> Public market data is active. MT5 Bridge V5 can replace it with broker candles and enable guarded live execution when explicitly armed in the terminal.</div>
+
+        <div class="kpi-grid">
+          <article class="card kpi"><div class="ring" id="winRing"><span id="winRate">—</span></div><div><small>Win Rate</small><strong id="winCount">No closed MT5 trades</strong><em>Synced from MT5 journal</em></div></article>
+          <article class="card kpi"><div class="kpi-icon">⌁</div><div><small>Profit Factor</small><strong id="profitFactor">—</strong><em>Real closed trades only</em></div></article>
+          <article class="card kpi"><div class="kpi-icon">▣</div><div><small>Total Profit</small><strong id="totalProfit">—</strong><em>Real closed trades only</em></div></article>
+          <article class="card kpi"><div class="kpi-icon redish">△</div><div><small>Max Drawdown</small><strong id="maxDd">—</strong><em>Real trade journal</em></div></article>
+          <article class="card kpi"><div class="kpi-icon">▥</div><div><small>Total Trades</small><strong id="tradeCount">0</strong><em>Synced journal records</em></div></article>
+        </div>
+
+        <div class="main-grid">
+          <article class="card chart-card">
+            <div class="card-head"><div><strong id="chartSymbol">XAUUSD</strong><span class="tag" id="chartTf">M3</span><span class="tag live-source" id="sourceTag">LIVE</span></div><div class="legend"><span class="leg ema9">EMA 9</span><span class="leg ema21">EMA 21</span><span class="leg ema50">EMA 50</span><span class="leg ema200">EMA 200</span></div></div>
+            <div class="ohlc" id="ohlc">Loading live market data…</div>
+            <div class="chart-wrap"><svg id="priceChart" viewBox="0 0 900 430" preserveAspectRatio="none"></svg></div>
+            <div class="rsi-box"><div class="rsi-label">RSI (14) <b id="rsiValue">—</b></div><svg id="rsiChart" viewBox="0 0 900 95" preserveAspectRatio="none"></svg></div>
+          </article>
+
+          <article class="card signal-card">
+            <div class="card-head"><strong>AI Signal</strong><span class="tag" id="confidenceLabel">Loading</span></div>
+            <div class="signal-top"><div class="signal-arrow" id="signalArrow">•</div><div><h2 id="signalSide">—</h2><small id="signalSymbol">XAUUSD · M3</small></div><div class="confidence-ring"><span id="confidence">—</span></div></div>
+            <div class="signal-table">
+              <div><span>Entry</span><b id="entry">—</b></div><div><span>SL</span><b id="sl">—</b></div><div><span>TP 1</span><b id="tp1">—</b></div><div><span>TP 2</span><b id="tp2">—</b></div><div><span>Risk : Reward</span><b id="rr">—</b></div>
+            </div>
+            <button class="primary" id="executeBtn" disabled>EXECUTION LOCKED · READ ONLY</button>
+            <div class="reason-box"><strong>Agent reasoning</strong><p id="reasonText">Waiting for live market analysis.</p></div>
+          </article>
+
+          <article class="card mtf-card">
+            <div class="card-head"><strong>Multi Timeframe Analysis</strong><span class="agent-pill">Structure Agent</span></div>
+            <table><thead><tr><th>TF</th><th>Trend / Structure</th><th>Signal</th></tr></thead><tbody id="mtfRows"></tbody></table>
+            <div class="checks" id="checks"></div>
+          </article>
+        </div>
+
+        <div class="lower-grid">
+          <article class="card positions"><div class="card-head"><strong>Open Position</strong><span class="agent-pill">Position Agent</span></div><div id="positionBox" class="empty-state">No MT5 position data. Connect MT5 Bridge V5 to show broker positions and live execution state.</div></article>
+          <article class="card history"><div class="card-head"><strong>Trade History</strong><span class="agent-pill">Journal Agent</span></div><div class="table-scroll"><table><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net R</th></tr></thead><tbody id="historyRows"></tbody></table></div></article>
+          <article class="card performance"><div class="card-head"><strong>MT5 Performance</strong><span class="tag" id="perfTf">M3</span></div><div class="perf-grid"><div><small>Total Profit</small><b id="perfProfit">—</b></div><div><small>Win Rate</small><b id="perfWinRate">—</b></div><div><small>Profit Factor</small><b id="perfProfitFactor">—</b></div><div><small>Max DD</small><b id="perfMaxDd">—</b></div></div><svg id="equityChart" viewBox="0 0 500 150" preserveAspectRatio="none"></svg></article>
+          <article class="card model"><div class="card-head"><strong>AI Model Performance</strong><span class="tag success" id="modelVersionTag">v2.0 LIVE</span></div><div id="featureBars" class="feature-bars"></div></article>
+          <article class="card risk"><div class="card-head"><strong>Risk Management</strong><span class="agent-pill">Live Guard</span></div><div class="form-grid"><label>Risk / Trade<input id="riskPct" type="number" value="1" min="0.1" max="3" step="0.1">%</label><label>Max Daily Loss<input id="dailyLoss" type="number" value="5" min="1" max="20">%</label><label>Max Drawdown<input id="riskDd" type="number" value="15" min="1" max="50">%</label><label>Max Open Trades<input id="maxTrades" type="number" value="1" min="1" max="3"></label></div><div class="switch-row"><span>Break Even +30 pips</span><button class="switch on" id="beSwitchMain"></button></div><div class="switch-row"><span>Trailing Stop</span><button class="switch" id="trailSwitchMain"></button></div><button class="secondary" id="saveRisk">Save Live Risk Settings</button></article>
+        </div>
+      </section>
+      <section class="content module-page hidden" id="modulePage"></section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

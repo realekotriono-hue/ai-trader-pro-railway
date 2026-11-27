@@ -1,0 +1,30 @@
+import { db } from '../db.js';
+import { analyzeMarketFromTimeframes } from '../lib/market.js';
+const n=v=>v===null||v===undefined?null:Number(v);
+const clean=xs=>Array.isArray(xs)?xs.map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close),volume:Number(c.volume||0)})).filter(c=>[c.time,c.open,c.high,c.low,c.close].every(Number.isFinite)&&c.open>0&&c.high>0&&c.low>0&&c.close>0).sort((a,b)=>a.time-b.time):[];
+export default async function(req,res){
+  const x=req.body||{};
+  if(x.confirmLive!==true)return res.status(400).json({error:'Live confirmation required'});
+  const symbol=String(x.symbol||'XAUUSD').toUpperCase(),tf=String(x.timeframe||'M3').toUpperCase();
+  if(!['XAUUSD','BTCUSD'].includes(symbol)||!['M1','M3','M5','M15'].includes(tf))return res.status(400).json({error:'Unsupported symbol/timeframe'});
+  const riskPct=Number(x.riskPct??1); if(!Number.isFinite(riskPct)||riskPct<0.1||riskPct>3)return res.status(400).json({error:'Risk must be between 0.1% and 3%'});
+  const bePips=Math.max(0,Math.min(500,Number(x.bePips??30)||30)), trailing=!!x.trailingEnabled;
+  const rowsQ=await db.query(`SELECT symbol,timeframe,source,candles,bid,ask,spread,account,positions,bridge_version,execution_enabled,terminal_trade_allowed,updated_at FROM live_market_state WHERE symbol=$1 ORDER BY updated_at DESC`,[symbol]);
+  const now=Date.now(),fresh=(rowsQ.rows||[]).filter(r=>now-new Date(r.updated_at).getTime()<=30000),latest=fresh[0];
+  if(!latest)return res.status(409).json({error:'MT5 bridge is not live'});
+  if(!latest.execution_enabled||!latest.terminal_trade_allowed)return res.status(409).json({error:'MT5 execution bridge is not armed',bridgeVersion:latest.bridge_version||null});
+  const byTf={}; for(const r of fresh)if(!byTf[r.timeframe])byTf[r.timeframe]=clean(r.candles).slice(-220);
+  const required=[tf,'M3','M5','M15']; const missing=[...new Set(required)].filter(k=>(byTf[k]?.length||0)<30);
+  if(missing.length)return res.status(409).json({error:'MT5 market data incomplete',missing});
+  const row=fresh.find(r=>r.timeframe===tf)||latest,bid=n(row.bid),ask=n(row.ask),spread=Number.isFinite(bid)&&Number.isFinite(ask)?Math.max(0,ask-bid):n(row.spread);
+  const market=analyzeMarketFromTimeframes({symbol,timeframe:tf,byTf,provider:'MT5 Broker Feed',providerType:'mt5-live',updatedAt:row.updated_at,spread});
+  const checks=Object.fromEntries(market.analysis.checks.map(c=>[c.name,c]));
+  const spreadOk=checks['Spread']?.ok===true,mtfOk=checks['Multi Timeframe']?.ok===true,obOk=checks['Order Block (OB)']?.ok===true;
+  if(market.signal.confidence<80||!mtfOk||!obOk||!spreadOk)return res.status(409).json({error:'Current setup does not pass live execution policy',confidence:market.signal.confidence,checks:market.analysis.checks});
+  const positions=Array.isArray(latest.positions)?latest.positions:[];
+  if(positions.some(p=>String(p.symbol||'').toUpperCase()===symbol))return res.status(409).json({error:'An open position already exists for this symbol'});
+  const dup=await db.query(`SELECT id,status FROM trade_commands WHERE symbol=$1 AND status IN ('queued','dispatched') AND created_at>now()-interval '90 seconds' ORDER BY id DESC LIMIT 1`,[symbol]);
+  if(dup.rows.length)return res.status(409).json({error:'A live command is already pending',commandId:Number(dup.rows[0].id),status:dup.rows[0].status});
+  const q=await db.query(`INSERT INTO trade_commands(symbol,side,timeframe,order_type,entry,sl,tp1,tp2,risk_pct,confidence,status,be_pips,trailing_enabled,expires_at,updated_at) VALUES($1,$2,$3,'MARKET',$4,$5,$6,$7,$8,$9,'queued',$10,$11,now()+interval '45 seconds',now()) RETURNING id,created_at`,[symbol,market.signal.side,tf,market.signal.entry,market.signal.sl,market.signal.tp1,market.signal.tp2,riskPct,market.signal.confidence,bePips,trailing]);
+  res.json({ok:true,mode:'LIVE_QUEUED',commandId:Number(q.rows[0].id),symbol,side:market.signal.side,entry:market.signal.entry,sl:market.signal.sl,tp1:market.signal.tp1,tp2:market.signal.tp2,riskPct,confidence:market.signal.confidence,expiresInSeconds:45});
+}

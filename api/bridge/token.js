@@ -1,0 +1,4 @@
+import { db } from '../db.js';
+const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function sha256(s){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))}
+export default async function(req,res){const bytes=crypto.getRandomValues(new Uint8Array(24)),token='mtp_'+[...bytes].map(b=>b.toString(16).padStart(2,'0')).join(''),hash=await sha256(token);await db.query(`UPDATE bridge_tokens SET active=false WHERE active=true`);await db.query(`INSERT INTO bridge_tokens(token_hash,label,active) VALUES($1,$2,true)`,[hash,'MT5 Bridge V5 Live']);res.json({ok:true,token,message:'Use this token only in your MT5 Bridge V5 EA. Rotate immediately if exposed.'});}
